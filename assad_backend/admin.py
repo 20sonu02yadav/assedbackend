@@ -40,3 +40,27 @@ class ReviewAdmin(admin.ModelAdmin):
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(Product, ProductAdmin)
 admin.site.register(ProductReview, ReviewAdmin)
+
+
+# FranchiseApplication (Admin Register)
+
+from .models import FranchiseApplication
+
+class FranchiseApplicationAdmin(admin.ModelAdmin):
+    list_display = (
+        "registered_business_name",
+        "city",
+        "state",
+        "primary_contact_person",
+        "email",
+        "type_of_business",
+        "nature_of_business",
+        "years_in_operation",
+        "warehouse_facility",
+        "created_at",
+    )
+    list_filter = ("state", "type_of_business", "nature_of_business", "warehouse_facility", "created_at")
+    search_fields = ("registered_business_name", "city", "primary_contact_person", "email", "gstin")
+    readonly_fields = ("created_at", "ip_address", "user_agent")
+
+admin.site.register(FranchiseApplication, FranchiseApplicationAdmin)

@@ -125,3 +125,70 @@ class ProductReview(models.Model):
 
     def __str__(self):
         return f"{self.product.title} - {self.rating}"
+
+
+
+
+
+
+
+from django.db import models
+
+
+class FranchiseApplication(models.Model):
+    TYPE_OF_BUSINESS_CHOICES = [
+        ("Proprietorship", "Proprietorship"),
+        ("Partnership", "Partnership"),
+        ("Pvt Ltd", "Pvt Ltd"),
+        ("Ltd Co", "Ltd Co"),
+        ("Other", "Other"),
+    ]
+
+    NATURE_OF_BUSINESS_CHOICES = [
+        ("Retail", "Retail"),
+        ("Wholesale", "Wholesale"),
+        ("Distribution", "Distribution"),
+        ("Online", "Online"),
+        ("Other", "Other"),
+    ]
+
+    YES_NO_CHOICES = [("Yes", "Yes"), ("No", "No")]
+
+    # Form fields
+    registered_business_name = models.CharField(max_length=255)
+    trading_name = models.CharField(max_length=255, blank=True)
+
+    type_of_business = models.CharField(max_length=50, choices=TYPE_OF_BUSINESS_CHOICES)
+    gstin = models.CharField(max_length=30, blank=True)
+
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    postal_code = models.CharField(max_length=20)
+
+    primary_contact_person = models.CharField(max_length=150)
+    designation = models.CharField(max_length=150)
+    email = models.EmailField()
+
+    alternate_contact_person = models.CharField(max_length=150, blank=True)
+
+    years_in_operation = models.CharField(max_length=50)  # "Less than 1", "1-2", ...
+    nature_of_business = models.CharField(max_length=50, choices=NATURE_OF_BUSINESS_CHOICES)
+
+    main_product_categories = models.TextField()
+    geographical_coverage = models.CharField(max_length=255)
+
+    number_of_employees = models.CharField(max_length=50, blank=True)
+    annual_turnover = models.CharField(max_length=80, blank=True)
+
+    warehouse_facility = models.CharField(max_length=10, choices=YES_NO_CHOICES, default="No")
+    warehouse_details = models.TextField(blank=True)
+
+    existing_dealerships = models.TextField(blank=True)
+
+    # system
+    created_at = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.registered_business_name} - {self.city} ({self.created_at.date()})"

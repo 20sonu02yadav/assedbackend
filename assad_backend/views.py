@@ -134,3 +134,15 @@ class ProductReviewListCreateView(generics.ListCreateAPIView):
         slug = self.kwargs["slug"]
         product = Product.objects.get(slug=slug, is_active=True)
         serializer.save(product=product)
+    
+
+
+from rest_framework import generics, permissions
+from .models import FranchiseApplication
+from .serializers import FranchiseApplicationCreateSerializer
+
+
+class FranchiseApplicationCreateView(generics.CreateAPIView):
+    queryset = FranchiseApplication.objects.all()
+    serializer_class = FranchiseApplicationCreateSerializer
+    permission_classes = [permissions.AllowAny]

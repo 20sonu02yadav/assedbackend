@@ -189,3 +189,68 @@ class ReviewSerializer(serializers.ModelSerializer):
         model = ProductReview
         fields = ("id", "rating", "name", "email", "comment", "created_at")
         read_only_fields = ("id", "created_at")
+
+
+
+from rest_framework import serializers
+from .models import FranchiseApplication
+
+
+class FranchiseApplicationCreateSerializer(serializers.ModelSerializer):
+    confirm = serializers.BooleanField(write_only=True)
+
+    class Meta:
+        model = FranchiseApplication
+        fields = [
+            "id",
+            "registered_business_name",
+            "trading_name",
+            "type_of_business",
+            "gstin",
+            "city",
+            "state",
+            "postal_code",
+            "primary_contact_person",
+            "designation",
+            "email",
+            "alternate_contact_person",
+            "years_in_operation",
+            "nature_of_business",
+            "main_product_categories",
+            "geographical_coverage",
+            "number_of_employees",
+            "annual_turnover",
+            "warehouse_facility",
+            "warehouse_details",
+            "existing_dealerships",
+            "confirm",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+
+    def validate(self, attrs):
+        # checkbox confirm required
+        if not attrs.get("confirm", False):
+            raise serializers.ValidationError({"confirm": "You must confirm the information is accurate."})
+
+        # if warehouse yes then details should be present (optional rule but helpful)
+        if attrs.get("warehouse_facility") == "Yes":
+            details = (attrs.get("warehouse_details") or "").strip()
+            if len(details) < 3:
+                raise serializers.ValidationError({"warehouse_details": "Please specify warehouse size/details."})
+
+        return attrs
+
+    def create(self, validated_data):
+        validated_data.pop("confirm", None)
+        request = self.context.get("request")
+        if request:
+            validated_data["ip_address"] = self._get_ip(request)
+            validated_data["user_agent"] = request.META.get("HTTP_USER_AGENT", "")[:1000]
+        return super().create(validated_data)
+
+    def _get_ip(self, request):
+        xff = request.META.get("HTTP_X_FORWARDED_FOR")
+        if xff:
+            return xff.split(",")[0].strip()
+        return request.META.get("REMOTE_ADDR")

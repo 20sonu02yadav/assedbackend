@@ -1,7 +1,7 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
-from .models import User
+from .models import *
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -254,3 +254,109 @@ class FranchiseApplicationCreateSerializer(serializers.ModelSerializer):
         if xff:
             return xff.split(",")[0].strip()
         return request.META.get("REMOTE_ADDR")
+    
+
+
+class CartItemSerializer(serializers.ModelSerializer):
+
+    product_title = serializers.CharField(source="product.title", read_only=True)
+
+    class Meta:
+        model = CartItem
+        fields = ["id", "product", "product_title", "quantity"]
+
+
+class CartSerializer(serializers.ModelSerializer):
+
+    items = CartItemSerializer(many=True)
+
+    class Meta:
+        model = Cart
+        fields = ["id", "items"]
+
+
+class OrderItemSerializer(serializers.ModelSerializer):
+
+    product_title = serializers.CharField(source="product.title", read_only=True)
+
+    class Meta:
+        model = OrderItem
+        fields = ["product_title", "price", "quantity"]
+
+
+class OrderSerializer(serializers.ModelSerializer):
+
+    items = OrderItemSerializer(many=True)
+
+    class Meta:
+        model = Order
+        fields = [
+            "id",
+            "razorpay_order_id",
+            "status",
+            "total_amount",
+            "items",
+            "created_at",
+        ]
+
+
+
+# serializers.py (add)
+from .models import Address
+
+class AddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = (
+            "id",
+            "full_name",
+            "phone",
+            "line1",
+            "line2",
+            "city",
+            "state",
+            "postal_code",
+            "country",
+            "is_default",
+            "created_at",
+        )
+        read_only_fields = ("id", "created_at")
+
+
+class AddressCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = (
+            "id",
+            "full_name",
+            "phone",
+            "line1",
+            "line2",
+            "city",
+            "state",
+            "postal_code",
+            "country",
+            "is_default",
+            "created_at",
+        )
+        read_only_fields = ("id", "created_at")
+
+    def validate(self, attrs):
+        # Basic validation
+        if len((attrs.get("postal_code") or "").strip()) < 4:
+            raise serializers.ValidationError({"postal_code": "Enter a valid postal code."})
+        if len((attrs.get("phone") or "").strip()) < 8:
+            raise serializers.ValidationError({"phone": "Enter a valid phone number."})
+        return attrs
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        user = request.user
+
+        is_default = validated_data.get("is_default", False)
+
+        # If setting default, unset old defaults
+        if is_default:
+            Address.objects.filter(user=user, is_default=True).update(is_default=False)
+
+        return Address.objects.create(user=user, **validated_data)

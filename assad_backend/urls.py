@@ -1,16 +1,19 @@
 from django.urls import path
-from .views import (
-    RegisterView, LoginView, MeView,
-    CategoryTreeView, ProductListView, ProductDetailView, ProductReviewListCreateView,FranchiseApplicationCreateView
-)
-
+from .views import *
 urlpatterns = [
     # auth
     path("auth/register/", RegisterView.as_view(), name="register"),
     path("auth/login/", LoginView.as_view(), name="login"),
     path("auth/me/", MeView.as_view(), name="me"),
+    path("cart/", CartView.as_view()),
+    path("cart/add/", AddToCartView.as_view()),
+    path("addresses/", AddressListCreateView.as_view(), name="address_list_create"),
+    path("addresses/<int:pk>/", AddressRetrieveUpdateDestroyView.as_view(), name="address_rud"),
+    path("payment/create-order/", CreateRazorpayOrder.as_view()),
+    path("payment/verify/", VerifyPayment.as_view()),
 
-    # store
+    path("orders/", UserOrdersView.as_view()),
+    # store 
     path("store/categories/", CategoryTreeView.as_view(), name="store-categories"),
     path("store/products/", ProductListView.as_view(), name="store-products"),
     path("store/products/<slug:slug>/", ProductDetailView.as_view(), name="store-product-detail"),

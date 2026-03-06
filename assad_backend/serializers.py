@@ -278,6 +278,11 @@ class FranchiseApplicationCreateSerializer(serializers.ModelSerializer):
 # CART SERIALIZERS
 # ============================================================
 
+
+# ============================================================
+# CART SERIALIZERS
+# ============================================================
+
 class CartItemSerializer(serializers.ModelSerializer):
     product_title = serializers.CharField(source="product.title", read_only=True)
     product_slug = serializers.CharField(source="product.slug", read_only=True)
@@ -287,7 +292,7 @@ class CartItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CartItem
-        fields = [
+        fields = (
             "id",
             "product",
             "product_title",
@@ -296,13 +301,14 @@ class CartItemSerializer(serializers.ModelSerializer):
             "unit_price",
             "quantity",
             "line_total",
-        ]
+        )
 
     def get_product_image(self, obj):
         first = obj.product.images.first()
-        request = self.context.get("request")
         if not first:
             return None
+
+        request = self.context.get("request")
         if request:
             return request.build_absolute_uri(first.image.url)
         return first.image.url
@@ -312,7 +318,7 @@ class CartItemSerializer(serializers.ModelSerializer):
 
     def get_line_total(self, obj):
         return str(obj.product.sale_price * obj.quantity)
-    
+
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
@@ -320,10 +326,11 @@ class CartSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cart
-        fields = ["id", "items", "total_amount"]
+        fields = ("id", "items", "total_amount")
 
     def get_total_amount(self, obj):
-        return str(sum(item.product.sale_price * item.quantity for item in obj.items.all()))
+        total = sum(item.product.sale_price * item.quantity for item in obj.items.all())
+        return str(total)
 
 
 # ============================================================
@@ -346,16 +353,28 @@ class AddressSerializer(serializers.ModelSerializer):
             "is_default",
             "created_at",
         )
+        read_only_fields = ("id", "created_at")
 
 
 class AddressCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
-        fields = "__all__"
+        fields = (
+            "id",
+            "full_name",
+            "phone",
+            "line1",
+            "line2",
+            "city",
+            "state",
+            "postal_code",
+            "country",
+            "is_default",
+            "created_at",
+        )
         read_only_fields = ("id", "created_at")
 
     def validate(self, attrs):
-
         if len((attrs.get("postal_code") or "").strip()) < 4:
             raise serializers.ValidationError(
                 {"postal_code": "Enter a valid postal code."}
@@ -373,7 +392,6 @@ class AddressCreateSerializer(serializers.ModelSerializer):
         user = request.user
 
         is_default = validated_data.get("is_default", False)
-
         if is_default:
             Address.objects.filter(user=user, is_default=True).update(is_default=False)
 
@@ -389,24 +407,37 @@ class OrderStatusHistorySerializer(serializers.ModelSerializer):
         model = OrderStatusHistory
         fields = ("id", "status", "note", "created_at")
 
+
 class OrderItemSerializer(serializers.ModelSerializer):
     product_title = serializers.CharField(source="product.title", read_only=True)
     product_slug = serializers.CharField(source="product.slug", read_only=True)
     product_image = serializers.SerializerMethodField()
+    line_total = serializers.SerializerMethodField()
 
     class Meta:
         model = OrderItem
-        fields = ("id", "product_title", "product_slug", "product_image", "price", "quantity")
+        fields = (
+            "id",
+            "product_title",
+            "product_slug",
+            "product_image",
+            "price",
+            "quantity",
+            "line_total",
+        )
 
     def get_product_image(self, obj):
         first = obj.product.images.first()
-        request = self.context.get("request")
         if not first:
             return None
+
+        request = self.context.get("request")
         if request:
             return request.build_absolute_uri(first.image.url)
         return first.image.url
-    
+
+    def get_line_total(self, obj):
+        return str(obj.price * obj.quantity)
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -414,7 +445,13 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ("id", "status", "total_amount", "created_at", "items")
+        fields = (
+            "id",
+            "status",
+            "total_amount",
+            "created_at",
+            "items",
+        )
 
 
 class OrderDetailSerializer(serializers.ModelSerializer):
@@ -442,7 +479,6 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             "history",
         )
 
-
 class OrderTrackingSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     history = OrderStatusHistorySerializer(many=True, read_only=True)
@@ -453,14 +489,15 @@ class OrderTrackingSerializer(serializers.ModelSerializer):
             "id",
             "status",
             "total_amount",
-            "courier_name",
-            "tracking_number",
-            "tracking_url",
             "created_at",
+            "shipping_full_name",
+            "shipping_phone",
+            "shipping_line1",
+            "shipping_line2",
+            "shipping_city",
+            "shipping_state",
+            "shipping_postal_code",
+            "shipping_country",
             "items",
             "history",
         )
-
-
-
-

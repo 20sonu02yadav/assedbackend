@@ -13,6 +13,8 @@ urlpatterns = [
     path("payment/verify/", VerifyPayment.as_view()),
 
     path("orders/", UserOrdersView.as_view()),
+     path("orders/", MyOrdersView.as_view(), name="my_orders"),
+    path("orders/<int:id>/", OrderDetailTrackingView.as_view(), name="order_detail_tracking"),
     # store 
     path("store/categories/", CategoryTreeView.as_view(), name="store-categories"),
     path("store/products/", ProductListView.as_view(), name="store-products"),

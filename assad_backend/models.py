@@ -251,9 +251,12 @@ class Order(models.Model):
     STATUS_CHOICES = [
         ("pending", "Pending"),
         ("paid", "Paid"),
+        ("packed", "Packed"),
         ("shipped", "Shipped"),
+        ("out_for_delivery", "Out for Delivery"),
         ("delivered", "Delivered"),
         ("cancelled", "Cancelled"),
+        
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="orders")
@@ -269,6 +272,9 @@ class Order(models.Model):
         default="pending"
     )
         # in your Order model add these fields (recommended snapshot)
+    courier_name = models.CharField(max_length=80, blank=True, default="")
+    tracking_number = models.CharField(max_length=120, blank=True, default="")
+    tracking_url = models.URLField(blank=True, default="")
     shipping_full_name = models.CharField(max_length=160, blank=True, default="")
     shipping_phone = models.CharField(max_length=30, blank=True, default="")
     shipping_line1 = models.CharField(max_length=255, blank=True, default="")
@@ -292,3 +298,18 @@ class OrderItem(models.Model):
 
     def total_price(self):
         return self.price * self.quantity
+    
+
+
+
+class OrderStatusHistory(models.Model):
+    order = models.ForeignKey(Order, related_name="history", on_delete=models.CASCADE)
+    status = models.CharField(max_length=30)
+    note = models.CharField(max_length=255, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"Order#{self.order_id} {self.status} @ {self.created_at}"

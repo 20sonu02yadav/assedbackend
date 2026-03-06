@@ -12,7 +12,7 @@ from .models import (
     CartItem,
     Order,
     OrderItem,
-    Address
+    Address,
 )
 
 # =========================================================
@@ -24,7 +24,6 @@ class CustomUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
         ("Extra", {"fields": ("role",)}),
     )
-
     list_display = ("username", "email", "role", "is_staff", "is_active")
     search_fields = ("username", "email")
 
@@ -60,11 +59,8 @@ class ProductAdmin(admin.ModelAdmin):
         "gst_percent",
         "is_active",
     )
-
     list_filter = ("is_active", "category")
-
     search_fields = ("title", "sku", "slug")
-
     inlines = [ProductImageInline]
 
 
@@ -85,7 +81,6 @@ class ReviewAdmin(admin.ModelAdmin):
 
 @admin.register(FranchiseApplication)
 class FranchiseApplicationAdmin(admin.ModelAdmin):
-
     list_display = (
         "registered_business_name",
         "city",
@@ -98,7 +93,6 @@ class FranchiseApplicationAdmin(admin.ModelAdmin):
         "warehouse_facility",
         "created_at",
     )
-
     list_filter = (
         "state",
         "type_of_business",
@@ -106,7 +100,6 @@ class FranchiseApplicationAdmin(admin.ModelAdmin):
         "warehouse_facility",
         "created_at",
     )
-
     search_fields = (
         "registered_business_name",
         "city",
@@ -114,7 +107,6 @@ class FranchiseApplicationAdmin(admin.ModelAdmin):
         "email",
         "gstin",
     )
-
     readonly_fields = ("created_at", "ip_address", "user_agent")
 
 
@@ -129,11 +121,8 @@ class CartItemInline(admin.TabularInline):
 
 @admin.register(Cart)
 class CartAdmin(admin.ModelAdmin):
-
     list_display = ("id", "user", "created_at")
-
     search_fields = ("user__username", "user__email")
-
     inlines = [CartItemInline]
 
 
@@ -146,9 +135,22 @@ class OrderItemInline(admin.TabularInline):
     extra = 0
 
 
+# Optional: OrderStatusHistory inline (only if model exists)
+try:
+    from .models import OrderStatusHistory
+
+    class OrderHistoryInline(admin.TabularInline):
+        model = OrderStatusHistory
+        extra = 0
+        readonly_fields = ("status", "note", "created_at")
+
+except Exception:
+    OrderStatusHistory = None
+    OrderHistoryInline = None
+
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-
     list_display = (
         "id",
         "user",
@@ -158,9 +160,7 @@ class OrderAdmin(admin.ModelAdmin):
         "status",
         "created_at",
     )
-
     list_filter = ("status", "created_at")
-
     search_fields = (
         "user__username",
         "razorpay_order_id",
@@ -168,7 +168,8 @@ class OrderAdmin(admin.ModelAdmin):
         "shipping_phone",
     )
 
-    inlines = [OrderItemInline]
+    # ✅ inlines safely
+    inlines = [OrderItemInline] + ([OrderHistoryInline] if OrderHistoryInline else [])
 
     fieldsets = (
         ("Order Info", {
@@ -180,7 +181,6 @@ class OrderAdmin(admin.ModelAdmin):
                 "razorpay_payment_id",
             )
         }),
-
         ("Shipping Address", {
             "fields": (
                 "shipping_full_name",
@@ -193,11 +193,10 @@ class OrderAdmin(admin.ModelAdmin):
                 "shipping_country",
             )
         }),
-
-        ("Timestamp", {
-            "fields": ("created_at",)
-        }),
+        ("Timestamp", {"fields": ("created_at",)}),
     )
+
+    readonly_fields = ("created_at",)
 
 
 # =========================================================
@@ -206,7 +205,6 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(Address)
 class AddressAdmin(admin.ModelAdmin):
-
     list_display = (
         "id",
         "user",
@@ -217,16 +215,6 @@ class AddressAdmin(admin.ModelAdmin):
         "is_default",
         "created_at",
     )
-
-    list_filter = (
-        "city",
-        "state",
-        "is_default",
-    )
-
-    search_fields = (
-        "full_name",
-        "phone",
-        "city",
-        "postal_code",
-    )
+    list_filter = ("city", "state", "is_default")
+    search_fields = ("full_name", "phone", "city", "postal_code")
+    readonly_fields = ("created_at",)

@@ -317,3 +317,36 @@ class AddressRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
         # if set default -> unset others
         if obj.is_default:
             Address.objects.filter(user=self.request.user).exclude(id=obj.id).update(is_default=False)
+
+
+
+# views.py (add)
+
+from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
+from .models import Order
+from .serializers import OrderTrackingSerializer
+
+class MyOrdersView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = OrderTrackingSerializer
+
+    def get_queryset(self):
+        return (
+            Order.objects
+            .filter(user=self.request.user)
+            .prefetch_related("items", "history", "items__product")
+            .order_by("-created_at")
+        )
+
+class OrderDetailTrackingView(generics.RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = OrderTrackingSerializer
+    lookup_field = "id"
+
+    def get_queryset(self):
+        return (
+            Order.objects
+            .filter(user=self.request.user)
+            .prefetch_related("items", "history", "items__product")
+        )

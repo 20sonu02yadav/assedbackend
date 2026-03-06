@@ -266,6 +266,16 @@ class CartItemSerializer(serializers.ModelSerializer):
         fields = ["id", "product", "product_title", "quantity"]
 
 
+
+from rest_framework import serializers
+from .models import Order, OrderItem, OrderStatusHistory
+
+class OrderStatusHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderStatusHistory
+        fields = ("id", "status", "note", "created_at")
+
+
 class CartSerializer(serializers.ModelSerializer):
 
     items = CartItemSerializer(many=True)
@@ -274,14 +284,13 @@ class CartSerializer(serializers.ModelSerializer):
         model = Cart
         fields = ["id", "items"]
 
-
 class OrderItemSerializer(serializers.ModelSerializer):
-
     product_title = serializers.CharField(source="product.title", read_only=True)
+    product_slug = serializers.CharField(source="product.slug", read_only=True)
 
     class Meta:
         model = OrderItem
-        fields = ["product_title", "price", "quantity"]
+        fields = ("id", "product_title", "product_slug", "price", "quantity")
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -300,6 +309,23 @@ class OrderSerializer(serializers.ModelSerializer):
         ]
 
 
+class OrderTrackingSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True, read_only=True)
+    history = OrderStatusHistorySerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Order
+        fields = (
+            "id",
+            "status",
+            "total_amount",
+            "courier_name",
+            "tracking_number",
+            "tracking_url",
+            "created_at",
+            "items",
+            "history",
+        )
 
 # serializers.py (add)
 from .models import Address

@@ -221,60 +221,52 @@ class CartItem(models.Model):
     def total_price(self):
         return self.product.sale_price * self.quantity
 
+# models.py (add these models if not present)
 
-# models.py (add below your existing models)
 from django.conf import settings
+from django.db import models
+
+User = settings.AUTH_USER_MODEL
 
 class Address(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="addresses", on_delete=models.CASCADE)
-
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="addresses")
     full_name = models.CharField(max_length=160)
     phone = models.CharField(max_length=30)
-
     line1 = models.CharField(max_length=255)
     line2 = models.CharField(max_length=255, blank=True, default="")
     city = models.CharField(max_length=120)
     state = models.CharField(max_length=120)
     postal_code = models.CharField(max_length=20)
-    country = models.CharField(max_length=120, default="India")
-
+    country = models.CharField(max_length=80, default="India")
     is_default = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["-is_default", "-created_at"]
+        ordering = ["-is_default","-created_at"]
 
     def __str__(self):
-        return f"{self.full_name} - {self.city} ({self.postal_code})"
-class Order(models.Model):
+        return f"{self.full_name} - {self.city}"
 
+class Order(models.Model):
     STATUS_CHOICES = [
-        ("pending", "Pending"),
-        ("paid", "Paid"),
-        ("packed", "Packed"),
-        ("shipped", "Shipped"),
-        ("out_for_delivery", "Out for Delivery"),
-        ("delivered", "Delivered"),
-        ("cancelled", "Cancelled"),
-        
+        ("pending","Pending"),
+        ("paid","Paid"),
+        ("processing","Processing"),
+        ("shipped","Shipped"),
+        ("out_for_delivery","Out for Delivery"),
+        ("delivered","Delivered"),
+        ("cancelled","Cancelled"),
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="orders")
-
     razorpay_order_id = models.CharField(max_length=200)
     razorpay_payment_id = models.CharField(max_length=200, blank=True)
 
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default="pending"
-    )
-        # in your Order model add these fields (recommended snapshot)
-    courier_name = models.CharField(max_length=80, blank=True, default="")
-    tracking_number = models.CharField(max_length=120, blank=True, default="")
-    tracking_url = models.URLField(blank=True, default="")
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default="pending")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # ✅ shipping snapshot (order time)
     shipping_full_name = models.CharField(max_length=160, blank=True, default="")
     shipping_phone = models.CharField(max_length=30, blank=True, default="")
     shipping_line1 = models.CharField(max_length=255, blank=True, default="")
@@ -282,25 +274,16 @@ class Order(models.Model):
     shipping_city = models.CharField(max_length=120, blank=True, default="")
     shipping_state = models.CharField(max_length=120, blank=True, default="")
     shipping_postal_code = models.CharField(max_length=20, blank=True, default="")
-    shipping_country = models.CharField(max_length=120, blank=True, default="India")
-    created_at = models.DateTimeField(auto_now_add=True)
+    shipping_country = models.CharField(max_length=80, blank=True, default="India")
 
+    class Meta:
+        ordering = ["-created_at"]
 
 class OrderItem(models.Model):
-
     order = models.ForeignKey(Order, related_name="items", on_delete=models.CASCADE)
-
     product = models.ForeignKey("Product", on_delete=models.CASCADE)
-
     price = models.DecimalField(max_digits=10, decimal_places=2)
-
     quantity = models.PositiveIntegerField()
-
-    def total_price(self):
-        return self.price * self.quantity
-    
-
-
 
 class OrderStatusHistory(models.Model):
     order = models.ForeignKey(Order, related_name="history", on_delete=models.CASCADE)
@@ -310,6 +293,3 @@ class OrderStatusHistory(models.Model):
 
     class Meta:
         ordering = ["created_at"]
-
-    def __str__(self):
-        return f"Order#{self.order_id} {self.status} @ {self.created_at}"

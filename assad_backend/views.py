@@ -536,3 +536,75 @@ class OrderDetailView(generics.RetrieveAPIView):
         ctx = super().get_serializer_context()
         ctx["request"] = self.request
         return ctx
+    
+
+
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.core.mail import send_mail
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+from rest_framework.permissions import AllowAny
+from .serializers import ForgotPasswordSerializer, ResetPasswordSerializer
+
+User = get_user_model()
+
+
+class ForgotPasswordView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = ForgotPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data["email"]
+        user = User.objects.filter(email__iexact=email, is_active=True).first()
+
+        # security: always return success message even if email not found
+        if user:
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = PasswordResetTokenGenerator().make_token(user)
+
+            reset_url = f"{settings.FRONTEND_URL}/reset-password/{uid}/{token}"
+
+            subject = "Reset your password"
+            message = (
+                f"Hello {user.username},\n\n"
+                f"You requested a password reset.\n\n"
+                f"Click the link below to reset your password:\n\n"
+                f"{reset_url}\n\n"
+                f"If you did not request this, you can ignore this email."
+            )
+
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+
+        return Response(
+            {"message": "If this email exists, a password reset link has been sent."},
+            status=status.HTTP_200_OK,
+        )
+
+
+class ResetPasswordView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = ResetPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = serializer.validated_data["user"]
+        password = serializer.validated_data["password"]
+
+        user.set_password(password)
+        user.save()
+
+        return Response(
+            {"message": "Password reset successful. Please login again."},
+            status=status.HTTP_200_OK,
+        )

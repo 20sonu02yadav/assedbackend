@@ -501,3 +501,49 @@ class OrderTrackingSerializer(serializers.ModelSerializer):
             "items",
             "history",
         )
+
+
+
+from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from rest_framework import serializers
+
+User = get_user_model()
+
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    password = serializers.CharField(write_only=True, min_length=6)
+    confirm_password = serializers.CharField(write_only=True, min_length=6)
+
+    def validate(self, attrs):
+        if attrs["password"] != attrs["confirm_password"]:
+            raise serializers.ValidationError(
+                {"confirm_password": "Passwords do not match."}
+            )
+
+        validate_password(attrs["password"])
+
+        try:
+            uid = force_str(urlsafe_base64_decode(attrs["uid"]))
+            user = User.objects.get(pk=uid)
+        except Exception:
+            raise serializers.ValidationError({"uid": "Invalid reset link."})
+
+        token_ok = PasswordResetTokenGenerator().check_token(user, attrs["token"])
+        if not token_ok:
+            raise serializers.ValidationError({"token": "Reset link is invalid or expired."})
+
+        attrs["user"] = user
+        return attrs

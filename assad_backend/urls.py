@@ -4,6 +4,8 @@ urlpatterns = [
     # auth
     path("auth/register/", RegisterView.as_view(), name="register"),
     path("auth/login/", LoginView.as_view(), name="login"),
+    path("auth/forgot-password/", ForgotPasswordView.as_view(), name="forgot-password"),
+    path("auth/reset-password/", ResetPasswordView.as_view(), name="reset-password"),
     path("auth/me/", MeView.as_view(), name="me"),
     path("cart/", CartView.as_view()),
     path("cart/add/", AddToCartView.as_view()),
